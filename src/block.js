@@ -11,7 +11,7 @@
 
 const SHA256 = require('crypto-js/sha256');
 const hex2ascii = require('hex2ascii');
-const { isNullOrUndefined } = require('util');
+const { isNullorUndefined } = require('util');
 
 class Block {
 
@@ -39,12 +39,17 @@ class Block {
     validate() {
         let self = this;
         return new Promise((resolve, reject) => {
-            const newBlock = {...self, hash: null };
-            const newHash = SHA256(JSON.stringify(newBlock)).toString(); //Recalculate the hash of the block
-            if (self.hash === newHash) { //comparing if the hashes changed
-                resolve("Block is valid"); //Returning the block is valid
+            // Save in auxiliary variable the current block hash
+            const curBlock = {...self, hash: null };
+            // Recalculate the hash of the Block
+            const latestHash = SHA256(JSON.stringify(curBlock)).toString();
+            // Comparing if the hashes changed
+            if (self.hash === latestHash) {
+                // Returning the Block is not valid
+                resolve("true block");
             } else {
-                reject("Block is not valid"); //Returning the block is not valid
+                // Returning the Block is valid
+                reject("false, this block has been tampered with");
             }
         });
     }
@@ -60,17 +65,24 @@ class Block {
      */
     getBData() {
         let self = this;
-        return new Promise((resolve, reject) => {
-            const dataEncoded = this.body; // Getting the encoded data saved in the Block
-            const dataJson = hex2ascii(dataEncoded); // Decoding the data to retrieve the JSON representation of the object
-            const dataParsed = JSON.parse(dataJson); // Parse the data to an object to be retrieve
-            if (this.height > 0) { // Resolve with the data if the object isn't the Genesis block
-                resolve(dataParsed);
+        return new Promise(function(resolve, reject) {
+            // Getting the encoded data saved in the Block
+            const blockData = this.body;
+            // Decoding the data to retrieve the JSON representation of the object
+            const blockHexDecoded = hex2ascii(blockData);
+            // Parse the data to an object to be retrieve.
+            var parsedData = (JSON.parse(blockHexDecoded));
+            // Resolve with the data if the object isn't the Genesis block
+            if (this.height > 0) {
+                resolve(parsedData);
             } else {
-                reject("Genesis Block");
+                reject("Only genesis block is available");
             }
         });
+
+
     }
+
 }
 
 module.exports.Block = Block; // Exposing the Block class as a module
