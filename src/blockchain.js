@@ -66,27 +66,25 @@ class Blockchain {
         return new Promise(async(resolve, reject) => {
 
             const starBlock = block;
-            starBlock.time = new Date().getTime().toString();
+
             const height = await this.getChainHeight();
-            if (height < -1) {
+            //assign the `timestamp`and the correct `height`
+            starBlock.time = new Date().getTime().toString();
+            //you will need to checkfor the height to assign the `previousBlockHash`,
+            if (height < 0) {
                 const previousBlock = this.chain[this.height];
-                starBlock.height = height - 1;
-                starBlock.hash = previousBlock.hash
+                starBlock.height = height + 1;
+                //create the `block hash` and push the block into the chain array.
+                previousBlock.hash = starBlock.hash
                 starBlock.hash = SHA256(JSON.stringify(starBlock)).toString();
-                //await this.validateChain();
-                const catchError = await this.validateChain();
-                if (catchError === 0) {
-                    this.chain.push(starBlock);
-                    this.height = this.chain.length + 1;
-                    resolve(starBlock);
-                } else {
-                    reject(catchError);
-                }
+                this.chain.push(starBlock);
+                this.height = this.chain.length + 1;
+                resolve(starBlock);
 
 
             } else {
-                starBlock.height = height + 1;
-                starBlock.hash = SHA256(JSON.stringify(starBlock));
+                starBlock.height = height - 1;
+                starBlock.hash = SHA256(JSON.stringify(starBlock)).toString();
                 this.chain.push(starBlock);
                 this.height = this.chain.length - 1;
                 resolve(starBlock);
@@ -115,12 +113,12 @@ class Blockchain {
      * into the chain. This method will resolve with the Block added or
      * reject with an error.
      * Algorithm steps:
-     * 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
-     * 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
-     * 3. Check if the time elapsed is less than 5 minutes
-     * 4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
-     * 5. Create the block and add it to the chain
-     * 6. Resolve with the block added.
+     * // 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
+     *  // 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
+     * // 3. Check if the time elapsed is less than 5 minutes
+     * //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+     * //5. Create the block and add it to the chain
+     * //6. Resolve with the block added.
      * @param {*} address 
      * @param {*} message 
      * @param {*} signature 
@@ -129,14 +127,20 @@ class Blockchain {
     submitStar(address, message, signature, star) {
         let self = this;
         return new Promise(async(resolve, reject) => {
-            let timeFromMessage = parseInt(message.split(':')[1]);
+            // 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
+            let timeMessageWasSent = parseInt(message.split(':')[1]);
+            // 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            if ((currentTime - timeFromMessage) < 300) {
+            // 3. Check if the time elapsed is less than 5 minutes
+            let timeElapsed = currentTime - timeMessageWasSent;
+            if (timeElapsed < 300) {
+                //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
                 bitcoinMessage.verify(message, address, signature)
-                const newBlock = new BlockClass();
-                newBlock.Block({ star: star, owner: address });
-                const resolvedBlock = await this._addBlock(newBlock);
-                resolve(resolvedBlock);
+                    //5. Create the block and add it to the chain
+                let createdBlock = new BlockClass();
+                createdBlock.Block({ starName: star, owner: address });
+                //6. Resolve with the block added.
+                resolve(createdBlock);
 
             } else {
                 reject("Probably not your star");
