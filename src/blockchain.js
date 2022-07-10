@@ -75,7 +75,7 @@ class Blockchain {
                 const previousBlock = this.chain[this.height];
                 starBlock.height = height + 1;
                 //create the `block hash` and push the block into the chain array.
-                previousBlock.hash = starBlock.hash
+                starBlock.previousBlockHash = previousBlock;
                 starBlock.hash = SHA256(JSON.stringify(starBlock)).toString();
                 this.chain.push(starBlock);
                 this.height = this.chain.length + 1;
@@ -182,7 +182,7 @@ class Blockchain {
             if (block) {
                 resolve(block);
             } else {
-                resolve(null);
+                reject(null);
             }
         });
     }
