@@ -69,21 +69,25 @@ class Blockchain {
 
             const height = await this.getChainHeight();
             //assign the `timestamp`and the correct `height`
-            starBlock.time = new Date().getTime().toString();
-            //you will need to checkfor the height to assign the `previousBlockHash`,
-            if (height < 0) {
-                const previousBlock = this.chain[this.height];
+            starBlock.time = new Date().getTime().toString().slice(0, -3);
+            //you will need to checkfor the height to assign the `previousBlockHash`
+            if (height > -1) {
                 starBlock.height = height + 1;
+                const previousBlock = this.chain[this.height];
+
                 //create the `block hash` and push the block into the chain array.
-                starBlock.previousBlockHash = previousBlock;
+                starBlock.previousBlockHash = previousBlock.hash;
                 starBlock.hash = SHA256(JSON.stringify(starBlock)).toString();
-                this.chain.push(starBlock);
-                this.height = this.chain.length + 1;
-                resolve(starBlock);
-
-
+                const checkIfErrorHappened = await this.validateChain();
+                if (checkIfErrorHappened.length === 0) {
+                    this.chain.push(starBlock);
+                    this.height = this.chain.length - 1;
+                    resolve(starBlock);
+                } else {
+                    reject(checkIfErrorHappened);
+                }
             } else {
-                starBlock.height = height - 1;
+                starBlock.height = height + 1;
                 starBlock.hash = SHA256(JSON.stringify(starBlock)).toString();
                 this.chain.push(starBlock);
                 this.height = this.chain.length - 1;
@@ -103,7 +107,7 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            resolve(address + ":" + new Date().getTime().toString().slice(0, -3 + ":" + starRegistry));
+            resolve(address + ":" + new Date().getTime().toString().slice(0, -3) + ":" + "starRegistry");
         });
     }
 
@@ -134,14 +138,19 @@ class Blockchain {
             // 3. Check if the time elapsed is less than 5 minutes
             let timeElapsed = currentTime - timeMessageWasSent;
             if (timeElapsed < 300) {
-                //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
-                bitcoinMessage.verify(message, address, signature)
+                try {
+                    //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+                    bitcoinMessage.verify(message, address, signature);
                     //5. Create the block and add it to the chain
-                let createdBlock = new BlockClass();
-                createdBlock.Block({ starName: star, owner: address });
-                //6. Resolve with the block added.
-                resolve(createdBlock);
+                    const createdBlock = new BlockClass();
+                    createdBlock.Block({ starName: star, owner: address });
+                    const certifiedBlock = await this._addBlock(createdBlock);
+                    //6. Resolve with the block added.
+                    resolve(certifiedBlock);
+                } catch (error) {
+                    console.log(error, "finally caught you")
 
+                }
             } else {
                 reject("Probably not your star");
             }
@@ -161,7 +170,7 @@ class Blockchain {
             const searchBlock = this.chain.filter(function(block) {
                 return hash === block.hash;
             });
-            if (block.hash !== null) {
+            if (searchBlock !== null) {
                 resolve(searchBlock);
             } else {
                 reject("Sorry: block not found");
@@ -210,7 +219,7 @@ class Blockchain {
                 } catch (e) {
                     console.log(e);
                 }
-            })
+            });
             resolve(stars);
         });
     }
@@ -229,8 +238,11 @@ class Blockchain {
                 try {
                     const hashOfPreviousBlock = this.chain[block.height - 1];
                     if (await block.validate()) {
-                        if (block.height !== 0 && block.hash !== hashOfPreviousBlock.hash) {
-                            errorLog.push(new Error("wrong"));
+                        if (block.height !== 0) {
+                            if (block.hash !== hashOfPreviousBlock.hash) {
+                                errorLog.push(new Error("wrong"));
+                            }
+
                         }
                     } else {
                         errorLog.push(new Error("block not available or created yet"));
