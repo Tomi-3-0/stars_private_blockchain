@@ -132,18 +132,17 @@ class Blockchain {
         let self = this;
         return new Promise(async(resolve, reject) => {
             // 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
-            let timeMessageWasSent = parseInt(message.split(':')[1]);
+            const timeMessageWasSent = parseInt(message.split(':')[1]);
             // 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
-            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+            const currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
             // 3. Check if the time elapsed is less than 5 minutes
-            let timeElapsed = currentTime - timeMessageWasSent;
+            const timeElapsed = currentTime - timeMessageWasSent;
             if (timeElapsed < 300) {
                 try {
                     //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
                     bitcoinMessage.verify(message, address, signature);
                     //5. Create the block and add it to the chain
-                    const createdBlock = new BlockClass();
-                    createdBlock.Block({ starName: star, owner: address });
+                    const createdBlock = new BlockClass.Block({ starName: star, owner: address });
                     const certifiedBlock = await this._addBlock(createdBlock);
                     //6. Resolve with the block added.
                     resolve(certifiedBlock);
